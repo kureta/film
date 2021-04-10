@@ -1,3 +1,8 @@
+.ipynb_checkpoints/
+.python-version
+original/
+pretrained.zip
+pretrained/
 .idea/
 contents/
 styles/
