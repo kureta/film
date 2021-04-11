@@ -8,7 +8,16 @@ step_dur = hop_size / sample_rate
 
 
 def oscillate(t, freq, center, amp, phase=0., power=1):
-    return center + amp * np.sin(freq * 2 * np.pi * (t + phase)) ** power
+    w = freq * 2 * np.pi
+    return center + amp * np.sin(w * t + phase) ** power
+
+
+def linear_oscillate(t, f0, f1, center, amp, phase=0., power=1):
+    w0 = f0 * 2 * np.pi
+    w1 = f1 * 2 * np.pi
+    a = (w1 - w0) / t.max()
+    b = w1
+    return center + amp * np.sin((a / 2) * (t ** 2) + b * t + phase) ** power
 
 
 def perc(attack_ratio=0.1, duration=0.5, peak=1.0):
