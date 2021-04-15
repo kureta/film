@@ -8,3 +8,4 @@ contents/
 styles/
 results/
 __pycache__/
+*.wav
