@@ -2,7 +2,7 @@ import os
 import pickle
 from collections import deque
 
-import ddsp
+import ddsp.training
 import gin
 import librosa
 import numpy as np
@@ -11,7 +11,6 @@ from utils import fit_quantile_transform
 
 SAMPLE_RATE = 16000
 HOP_SIZE = 64
-STEP_DUR = HOP_SIZE / SAMPLE_RATE
 SECOND = SAMPLE_RATE // HOP_SIZE
 
 
@@ -89,22 +88,17 @@ def square(duration, freq, ratio=0.5, lowest=0., highest=1., phase=0.):
     return signal
 
 
-def adsr(a, d, s, r, dur, peak, vol):
-    # TODO: update
-    factor = sum([a, d, s, r])
-    num_steps = dur * SECOND
+def adsr(a, d, s, r, peak, vol):
+    attack = line_segment(a, 0., peak)
+    decay = line_segment(d, peak, vol)
+    sustain = constant(s, vol)
+    release = line_segment(r, vol, 0)
 
-    attack_steps = int(num_steps * a / factor)
-    decay_steps = int(num_steps * d / factor)
-    sustain_steps = int(num_steps * s / factor)
-    release_steps = num_steps - (attack_steps + decay_steps + sustain_steps)
+    envelop = np.concatenate([
+        attack, decay, sustain, release
+    ])
 
-    attack = np.linspace(0., peak, attack_steps)
-    decay = np.linspace(peak, vol, decay_steps)
-    sustain = np.linspace(vol, vol, sustain_steps)
-    release = np.linspace(vol, 0., release_steps)
-
-    return np.concatenate([attack, decay, sustain, release])
+    return envelop
 
 
 scales = {
@@ -155,13 +149,13 @@ def to_db_loudness(loudness, instrument, db_offset=0.):
     return loudness_norm + db_offset
 
 
-def generate_audio(model, pitch, loudness):
+def generate_audio_(instrument, pitch, loudness_db):
     af = {
         'f0_hz': librosa.midi_to_hz(pitch),
-        'loudness_db': loudness
+        'loudness_db': loudness_db
     }
     # Pretrained models.
-    model_dir = f'pretrained/{model.lower()}'
+    model_dir = f'pretrained/{instrument.lower()}'
 
     gin_file = os.path.join(model_dir, 'operative_config-0.gin')
 
@@ -193,11 +187,16 @@ def generate_audio(model, pitch, loudness):
         gin.parse_config(gin_params)
 
     # Set up the model just to predict audio given new conditioning
-    model = ddsp.training.models.Autoencoder()
-    model.restore(ckpt)
+    instrument = ddsp.training.models.Autoencoder()
+    instrument.restore(ckpt)
 
     # Build model by running a batch through it.
-    outputs = model(af, training=False)
-    audio_gen = model.get_audio_from_outputs(outputs).numpy()[0]
-    del model
+    outputs = instrument(af, training=False)
+    audio_gen = instrument.get_audio_from_outputs(outputs).numpy()[0]
+    del instrument
     return audio_gen
+
+
+def generate_audio(instrument, pitch, loudness, db_offset=0.):
+    loudness_db = to_db_loudness(loudness, instrument, db_offset)
+    return generate_audio_(instrument, pitch, loudness_db)
