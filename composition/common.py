@@ -124,6 +124,10 @@ def autotune(f0_midi, amount=0.0, scale='chromatic', rotate=0, offset=0):
     scale = np.concatenate([scale + 12 * i for i in range(10)])
     scale = (scale + offset) % 120
 
+    return autotune_explicit(f0_midi, amount, scale)
+
+
+def autotune_explicit(f0_midi, amount, scale):
     idx = np.abs(f0_midi[np.newaxis, :] - scale[:, np.newaxis]).argmin(axis=0)
     midi_diff = f0_midi - scale[idx]
 
