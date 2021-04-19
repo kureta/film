@@ -66,8 +66,34 @@ def line_segment(duration, start=0., end=1.):
     return a * t + b
 
 
+def sweeping_phasor(duration, f0, f1, phase=0.):
+    t = get_t(duration)
+    a = (f1 - f0) / duration
+    b = f0
+
+    t = (a / 2) * (t ** 2) + b * t + phase
+
+    signal = t % 1.
+
+    return signal
+
+
 def triangle(duration, freq, ratio=0.5, lowest=0., highest=1., phase=0., power=1.):
     t = phasor(duration, freq, phase)
+
+    signal = t / ratio
+    mask = t > ratio
+    signal[mask] = (t[mask] - 1) / (ratio - 1)
+
+    signal **= power
+    signal = rescale(signal, lowest, highest)
+
+    return signal
+
+
+def sweeping_triangle(duration, f0, f1, ratio=0.5, lowest=0., highest=1., phase=0., power=1.):
+    t = sweeping_phasor(duration, f0, f1, phase)
+
     signal = t / ratio
     mask = t > ratio
     signal[mask] = (t[mask] - 1) / (ratio - 1)
@@ -80,6 +106,17 @@ def triangle(duration, freq, ratio=0.5, lowest=0., highest=1., phase=0., power=1
 
 def square(duration, freq, ratio=0.5, lowest=0., highest=1., phase=0.):
     t = phasor(duration, freq, phase)
+    signal = np.ones_like(t)
+    signal[t > ratio] = 0.
+
+    signal = rescale(signal, lowest, highest)
+
+    return signal
+
+
+def sweeping_square(duration, f0, f1, ratio=0.5, lowest=0., highest=1., phase=0.):
+    t = sweeping_phasor(duration, f0, f1, phase)
+
     signal = np.ones_like(t)
     signal[t > ratio] = 0.
 
