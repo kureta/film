@@ -27,8 +27,8 @@ def get_t(duration):
 
 
 def phasor(duration, freq, phase=0.):
-    t = get_t(duration) + phase / freq
-    signal = (t % (1 / freq)) * freq
+    t = freq * get_t(duration) + phase
+    signal = t % 1.
 
     return signal
 
