@@ -180,7 +180,7 @@ def to_db_loudness(loudness, instrument, db_offset=0.):
 
     _, loudness_norm = fit_quantile_transform(
         loudness,
-        loudness >= 0.0,
+        loudness > 0.0,
         inv_quantile=qt)
 
     loudness_norm = loudness_norm[:, 0]
