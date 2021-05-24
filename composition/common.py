@@ -138,6 +138,13 @@ def adsr(a, d, s, r, peak, vol):
     return envelop
 
 
+def bpc(values, durations):
+    result = []
+
+    for idx, d in enumerate(durations):
+        result.append(line_segment(d, values[idx], values[idx + 1]))
+
+    return np.concatenate(result)
 scales = {
     'major': [0, 2, 4, 5, 7, 9, 11],
     'melodic_minor': [0, 2, 3, 5, 7, 9, 11],
@@ -190,7 +197,7 @@ def to_db_loudness(loudness, instrument, db_offset=0.):
     return loudness_norm + db_offset
 
 
-def generate_audio_(instrument, pitch, loudness_db):
+def generate_audio(instrument, pitch, loudness_db):
     af = {
         'f0_hz': librosa.midi_to_hz(pitch),
         'loudness_db': loudness_db
@@ -236,8 +243,3 @@ def generate_audio_(instrument, pitch, loudness_db):
     audio_gen = instrument.get_audio_from_outputs(outputs).numpy()[0]
     del instrument
     return audio_gen
-
-
-def generate_audio(instrument, pitch, loudness, db_offset=0.):
-    loudness_db = to_db_loudness(loudness, instrument, db_offset)
-    return generate_audio_(instrument, pitch, loudness_db)
