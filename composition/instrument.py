@@ -1,6 +1,8 @@
 import os
 import pickle
 
+import ddsp.training
+import librosa
 import matplotlib.pyplot as plt
 import numpy as np
 import soundfile
@@ -32,6 +34,15 @@ def show(pitch, loudness, title=None):
 
     if title is not None:
         plt.title(title)
+
+
+def phrase_from_audio(audio_path):
+    audio, _ = librosa.load(audio_path, 16000)
+    audio_features = ddsp.training.metrics.compute_audio_features(audio)
+
+    phrase = Phrase(librosa.hz_to_midi(audio_features['f0_hz']), audio_features['loudness_db'])
+
+    return phrase
 
 
 class Phrase:
@@ -92,7 +103,8 @@ class Score:
         self.duration = self.num_steps * SECOND
 
     def show(self):
-        fig, axes = plt.subplots(6, 1, figsize=(16, 16), sharex=True)
+        n = len(self.parts)
+        fig, axes = plt.subplots(n, 1, figsize=(16, n*4), sharex=True)
 
         for idx, part in enumerate(self.parts):
             steps = len(part)
