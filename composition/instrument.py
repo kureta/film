@@ -9,7 +9,7 @@ import soundfile
 from IPython.display import Audio
 from matplotlib.backends.backend_pdf import PdfPages
 
-from composition.common import SECOND, constant, generate_audio, to_db_loudness
+from composition.common import SECOND, constant, generate_audio, HOP_SIZE
 
 
 def pad(xs, duration, value=None):
@@ -100,7 +100,7 @@ class Score:
             self.parts = parts
 
         self.num_steps = max(len(p) for p in self.parts)
-        self.duration = self.num_steps * SECOND
+        self.duration = self.num_steps * HOP_SIZE
 
     def show(self):
         n = len(self.parts)
