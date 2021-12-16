@@ -16,7 +16,7 @@ def pad(xs, duration, value=None):
     if value is None:
         value = xs.min()
     start = constant(duration, value)
-    end = constant(duration, value)
+    end = constant(duration * 2, value)
 
     return np.concatenate([start, xs, end])
 
