@@ -77,16 +77,22 @@ class Part:
     def loudness(self):
         return np.concatenate([p.loudness for p in self.phrases])
 
-    def show(self):
-        show(self.pitch, self.loudness)
+    def show(self, offset=None):
+        if offset:
+            show(self.pitch[offset*SECOND:], self.loudness[offset*SECOND:])
+        else:
+            show(self.pitch, self.loudness)
 
     def audio(self):
         padded_pitch = pad(self.pitch, 2)
         padded_loudness = pad(self.loudness, 2, value=-110)
         return generate_audio(self.instrument, padded_pitch, padded_loudness)
 
-    def play(self):
-        return Audio(self.audio(), rate=16000)
+    def play(self, offset=None):
+        if offset:
+            return Audio(self.audio()[offset*16000:], rate=16000, normalize=False)
+
+        return Audio(self.audio(), rate=16000, normalize=False)
 
     def __len__(self):
         return len(self.pitch)
@@ -127,7 +133,7 @@ class Score:
         return result
 
     def play(self):
-        return Audio(self.audio(), rate=16000)
+        return Audio(self.audio(), rate=16000, normalize=False)
 
     def save(self, name, base_path='./audio-data/original'):
         path = os.path.join(base_path, name)
