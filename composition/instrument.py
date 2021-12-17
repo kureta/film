@@ -9,10 +9,32 @@ import soundfile
 from IPython.display import Audio
 from matplotlib.backends.backend_pdf import PdfPages
 
-from composition.common import SECOND, constant, generate_audio, HOP_SIZE
-
+from composition.common import HOP_SIZE, SECOND, constant, generate_audio
 
 COPPER = 4.236067978
+
+
+def get_cents(midi):
+    c = int(f'{midi:.2f}'.split('.')[1])
+    if c >= 50:
+        c -= 100
+    return c
+
+
+def get_note(midi):
+    name = librosa.midi_to_note(midi)
+    cents = get_cents(midi)
+
+    if cents == 0:
+        return name
+    elif cents > 0:
+        return f'{name} +{cents}'
+    else:
+        return f'{name} {cents}'
+
+
+def note_formatter(x, pos=None):
+    return get_note(x)
 
 
 def pad(xs, duration, value=None):
@@ -31,7 +53,7 @@ def show(pitch, loudness, title=None, offset=0.0):
 
     t = np.linspace(0, dur, steps) + offset
 
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(4 * COPPER, 4), gridspec_kw={'height_ratios': [4, 1]})
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(4 * COPPER, 4), gridspec_kw={'height_ratios': [COPPER, 1]})
     fig.subplots_adjust(hspace=0)
 
     if title:
@@ -40,6 +62,7 @@ def show(pitch, loudness, title=None, offset=0.0):
     # pitch
     ax1.plot(t, pitch, color='blue')
     ax1.axes.xaxis.set_visible(False)
+    ax1.yaxis.set_major_formatter(note_formatter)
     # ax1.axes.yaxis.set_visible(False)
 
     # loudness
@@ -47,7 +70,7 @@ def show(pitch, loudness, title=None, offset=0.0):
     ax2.fill_between(t, min(loudness), loudness, color='red', alpha=0.75)
     ax2.axes.yaxis.set_visible(False)
 
-    plt.show()
+    return fig
 
 
 def phrase_from_audio(audio_path):
@@ -67,7 +90,9 @@ class Phrase:
         self.loudness = loudness
 
     def show(self):
-        show(self.pitch, self.loudness)
+        fig = show(self.pitch, self.loudness)
+        plt.figure(fig)
+        plt.show()
 
     def __len__(self):
         return len(self.pitch)
@@ -93,9 +118,13 @@ class Part:
 
     def show(self, offset=None):
         if offset:
-            show(self.pitch[offset*SECOND:], self.loudness[offset*SECOND:], offset=offset, title=self.part_name)
+            fig = show(self.pitch[offset * SECOND:], self.loudness[offset * SECOND:], offset=offset,
+                       title=self.part_name)
         else:
-            show(self.pitch, self.loudness, title=self.part_name)
+            fig = show(self.pitch, self.loudness, title=self.part_name)
+
+        plt.figure(fig)
+        plt.show()
 
     def audio(self):
         padded_pitch = pad(self.pitch, 2)
@@ -104,7 +133,7 @@ class Part:
 
     def play(self, offset=None):
         if offset:
-            return Audio(self.audio()[offset*16000:], rate=16000, normalize=False)
+            return Audio(self.audio()[offset * 16000:], rate=16000, normalize=False)
 
         return Audio(self.audio(), rate=16000, normalize=False)
 
@@ -124,7 +153,7 @@ class Score:
 
     def show(self):
         n = len(self.parts)
-        fig, axes = plt.subplots(n, 1, figsize=(16, n*4), sharex=True)
+        fig, axes = plt.subplots(n, 1, figsize=(16, n * 4), sharex=True)
 
         for idx, part in enumerate(self.parts):
             steps = len(part)
