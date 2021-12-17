@@ -7,11 +7,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import soundfile
 from IPython.display import Audio
+from matplotlib import animation
 from matplotlib.backends.backend_pdf import PdfPages
 
 from composition.common import HOP_SIZE, SECOND, constant, generate_audio
 
 COPPER = 4.236067978
+FPS = 30
 
 
 def get_cents(midi):
@@ -130,6 +132,19 @@ class Part:
         padded_pitch = pad(self.pitch, 2)
         padded_loudness = pad(self.loudness, 2, value=-110)
         return generate_audio(self.instrument, padded_pitch, padded_loudness)
+
+    def video(self, path):
+        fig = show(self.pitch, self.loudness, self.part_name)
+        vline1 = fig.get_axes()[0].axvline(0.)
+        vline2 = fig.get_axes()[1].axvline(0.)
+
+        def show_time(t):
+            vline1.set_data([t / FPS, t / FPS], [0, 1])
+            vline2.set_data([t / FPS, t / FPS], [0, 1])
+
+        n_frames = int(FPS * (len(self.pitch) / SECOND))
+        anim = animation.FuncAnimation(fig, show_time, frames=n_frames)
+        anim.save(path, writer=animation.FFMpegWriter(FPS, 'h264'))
 
     def play(self, offset=None):
         if offset:
