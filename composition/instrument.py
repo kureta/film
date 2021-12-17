@@ -43,7 +43,7 @@ def pad(xs, duration, value=None):
     if value is None:
         value = xs.min()
     start = constant(duration, value)
-    end = constant(duration * 2, value)
+    end = constant(duration * 4, value)
 
     return np.concatenate([start, xs, end])
 
@@ -133,7 +133,7 @@ class Part:
         padded_loudness = pad(self.loudness, 2, value=-110)
         return generate_audio(self.instrument, padded_pitch, padded_loudness)
 
-    def video(self, path):
+    def video(self, path, codec='h264'):
         fig = show(self.pitch, self.loudness, self.part_name)
         vline1 = fig.get_axes()[0].axvline(0.)
         vline2 = fig.get_axes()[1].axvline(0.)
@@ -144,7 +144,7 @@ class Part:
 
         n_frames = int(FPS * (len(self.pitch) / SECOND))
         anim = animation.FuncAnimation(fig, show_time, frames=n_frames)
-        anim.save(path, writer=animation.FFMpegWriter(FPS, 'h264'))
+        anim.save(path, writer=animation.FFMpegWriter(FPS, codec))
 
     def play(self, offset=None):
         if offset:
