@@ -12,6 +12,9 @@ from matplotlib.backends.backend_pdf import PdfPages
 from composition.common import SECOND, constant, generate_audio, HOP_SIZE
 
 
+COPPER = 4.236067978
+
+
 def pad(xs, duration, value=None):
     if value is None:
         value = xs.min()
@@ -21,19 +24,30 @@ def pad(xs, duration, value=None):
     return np.concatenate([start, xs, end])
 
 
-def show(pitch, loudness, title=None):
+def show(pitch, loudness, title=None, offset=0.0):
     steps = len(loudness)
     dur = steps / SECOND
-    t = np.linspace(0, dur, steps)
+    # px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
 
-    fig, ax = plt.subplots()
-    ax2 = ax.twinx()
+    t = np.linspace(0, dur, steps) + offset
 
-    ax.plot(t, loudness, color='red')
-    ax2.plot(t, pitch, color='blue')
+    fig, (ax1, ax2) = plt.subplots(2, sharex=True, figsize=(4 * COPPER, 4), gridspec_kw={'height_ratios': [4, 1]})
+    fig.subplots_adjust(hspace=0)
 
-    if title is not None:
-        plt.title(title)
+    if title:
+        ax1.set_title(title)
+
+    # pitch
+    ax1.plot(t, pitch, color='blue')
+    ax1.axes.xaxis.set_visible(False)
+    # ax1.axes.yaxis.set_visible(False)
+
+    # loudness
+    ax2.plot(t, loudness, color='blue')
+    ax2.fill_between(t, min(loudness), loudness, color='red', alpha=0.75)
+    ax2.axes.yaxis.set_visible(False)
+
+    plt.show()
 
 
 def phrase_from_audio(audio_path):
@@ -79,9 +93,9 @@ class Part:
 
     def show(self, offset=None):
         if offset:
-            show(self.pitch[offset*SECOND:], self.loudness[offset*SECOND:])
+            show(self.pitch[offset*SECOND:], self.loudness[offset*SECOND:], offset=offset, title=self.part_name)
         else:
-            show(self.pitch, self.loudness)
+            show(self.pitch, self.loudness, title=self.part_name)
 
     def audio(self):
         padded_pitch = pad(self.pitch, 2)
