@@ -157,6 +157,10 @@ def bpc_floor(values, durations):
     return np.concatenate(result)
 
 
+def figure(pitches, durations):
+    return np.concatenate([constant(d, p) for d, p in zip(durations, pitches)])
+
+
 scales = {
     'major': [0, 2, 4, 5, 7, 9, 11],
     'melodic_minor': [0, 2, 3, 5, 7, 9, 11],
@@ -199,7 +203,7 @@ def to_db_loudness(loudness, instrument, db_offset=0., min_loudness=0.0):
 
     _, loudness_norm = fit_quantile_transform(
         loudness,
-        True,
+        loudness > min_loudness,
         inv_quantile=qt)
 
     loudness_norm = loudness_norm[:, 0]
