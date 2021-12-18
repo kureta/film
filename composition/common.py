@@ -16,7 +16,44 @@ SECOND = SAMPLE_RATE // HOP_SIZE
 
 
 def rescale(xs, min_val, max_val):
-    return xs * (max_val - min_val) + min_val
+    norm = (xs - np.min(xs)) / (np.max(xs) - np.min(xs))
+    return norm * (max_val - min_val) + min_val
+
+
+def rescale_first_last(xs, min_val, max_val):
+    norm = (xs - xs[0]) / (xs[-1] - xs[0])
+    return norm * (max_val - min_val) + min_val
+
+
+def fractal(points, n=3):
+    points = np.array(points)
+    segments = points.copy()
+    for _ in range(n):
+        segments = np.concatenate([rescale_first_last(points, f, s)[:-1] for f, s in zip(segments, segments[1:])])
+        segments = np.concatenate((segments, points[-1:]))
+    return segments
+
+
+def to_delta(d):
+    return d[1:] - d[:-1]
+
+
+def from_delta(d):
+    return np.concatenate([[0], np.cumsum(d)])
+
+
+def fractal_bpc_floor(values, delta_times, n=0):
+    values = fractal(values, n)
+    delta_times = to_delta(fractal(from_delta(delta_times), n))
+
+    return bpc_floor(values, delta_times), delta_times
+
+
+def fractal_bpc(values, delta_times, n=0):
+    values = fractal(values, n)
+    delta_times = to_delta(fractal(from_delta(delta_times), n))
+
+    return bpc(values, delta_times), delta_times
 
 
 def time_to_step(duration):
