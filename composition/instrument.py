@@ -8,9 +8,10 @@ import numpy as np
 import soundfile
 from IPython.display import Audio
 from matplotlib import animation
-from matplotlib.backends.backend_pdf import PdfPages
 
 from composition.common import HOP_SIZE, SECOND, constant, generate_audio
+
+# from matplotlib.backends.backend_pdf import PdfPages
 
 COPPER = 4.236067978
 FPS = 30
@@ -18,7 +19,7 @@ FPS = 30
 
 def get_cents(midi):
     c = int(f'{midi:.2f}'.split('.')[1])
-    if c >= 50:
+    if c > 50:
         c -= 100
     return c
 
@@ -35,7 +36,10 @@ def get_note(midi):
         return f'{name} {cents}'
 
 
-def note_formatter(x, pos=None):
+v_get_note = np.vectorize(get_note)
+
+
+def note_formatter(x, _pos=None):
     return get_note(x)
 
 
@@ -65,12 +69,17 @@ def show(pitch, loudness, title=None, offset=0.0):
     ax1.plot(t, pitch, color='blue')
     ax1.axes.xaxis.set_visible(False)
     ax1.yaxis.set_major_formatter(note_formatter)
-    # ax1.axes.yaxis.set_visible(False)
+    y_start = np.floor(pitch.min())
+    y_end = np.ceil(pitch.max())
+    pitch_nums = np.arange(y_start, y_end + 1)
+    ax1.set_yticks(pitch_nums)
 
     # loudness
     ax2.plot(t, loudness, color='blue')
     ax2.fill_between(t, min(loudness), loudness, color='red', alpha=0.75)
     ax2.axes.yaxis.set_visible(False)
+    x_ticks = np.concatenate([t, t[-1:] + 1 / SECOND])
+    ax2.set_xticks(x_ticks[::SECOND])
 
     return fig
 
@@ -120,7 +129,7 @@ class Part:
 
     def show(self, offset=None):
         if offset:
-            fig = show(self.pitch[offset * SECOND:], self.loudness[offset * SECOND:], offset=offset,
+            fig = show(self.pitch[int(offset * SECOND):], self.loudness[int(offset * SECOND):], offset=offset,
                        title=self.part_name)
         else:
             fig = show(self.pitch, self.loudness, title=self.part_name)
@@ -148,7 +157,7 @@ class Part:
 
     def play(self, offset=None):
         if offset:
-            return Audio(self.audio()[offset * 16000:], rate=16000, normalize=False)
+            return Audio(self.audio()[int(offset * 16000):], rate=16000, normalize=False)
 
         return Audio(self.audio(), rate=16000, normalize=False)
 
@@ -201,7 +210,7 @@ class Score:
         for part in self.parts:
             soundfile.write(os.path.join(path, f'{name}-{part.part_name}.wav'), part.audio(), 16000)
 
-        pp = PdfPages(os.path.join(path, f'{name}.pdf'))
-        self.show()
-        pp.savefig()
-        pp.close()
+        # pp = PdfPages(os.path.join(path, f'{name}.pdf'))
+        # self.show()
+        # pp.savefig()
+        # pp.close()
