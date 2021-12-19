@@ -198,6 +198,10 @@ def figure(pitches, durations):
     return np.concatenate([constant(d, p) for d, p in zip(durations, pitches)])
 
 
+def pad_to_dur(array, dur):
+    return np.pad(array, (0, time_to_step(dur) - len(array)), constant_values=array[-1])
+
+
 scales = {
     'major': [0, 2, 4, 5, 7, 9, 11],
     'melodic_minor': [0, 2, 3, 5, 7, 9, 11],
