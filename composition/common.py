@@ -199,7 +199,10 @@ def figure(pitches, durations):
 
 
 def pad_to_dur(array, dur):
-    return np.pad(array, (0, time_to_step(dur) - len(array)), constant_values=array[-1])
+    padding = time_to_step(dur) - len(array)
+    if padding < 0:
+        return array[:padding]
+    return np.pad(array, (0, padding), constant_values=array[-1])
 
 
 scales = {
