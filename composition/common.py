@@ -321,10 +321,10 @@ def harmonics_to_cents(harmonics):
     return cents
 
 
-def random_adsr(duration):
+def random_adsr(duration, sustain=0.5):
     break_points = sorted(np.random.uniform(0, duration, 3))
     durs = np.diff(np.array([0, *break_points, duration]))
-    env = adsr(*durs, 1, 0.5)
+    env = adsr(*durs, 1, sustain)
     steps = time_to_step(duration)
     if len(env) < steps:
         env = np.pad(env, (0, steps - len(env)))
