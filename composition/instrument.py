@@ -105,6 +105,14 @@ class Phrase:
         plt.figure(fig)
         plt.show()
 
+    def audio(self, instrument):
+        padded_pitch = pad(self.pitch, 2)
+        padded_loudness = pad(self.loudness, 2, value=-110)
+        return generate_audio(instrument, padded_pitch, padded_loudness)
+
+    def play(self, instrument):
+        return Audio(self.audio(instrument), rate=16000, normalize=False)
+
     def __len__(self):
         return len(self.pitch)
 
