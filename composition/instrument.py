@@ -228,11 +228,12 @@ class Score:
 
     def video(self, path, begin=0, end=-1, codec='h264'):
         fig = self.show(begin, end)
-        vlines = [ax.axvline(0.0) for ax in fig.get_axes()]
+        start = begin / SECOND
+        vlines = [ax.axvline(start) for ax in fig.get_axes()]
 
         def show_time(t):
             for vl in vlines:
-                vl.set_data([t / FPS, t / FPS], [0, 1])
+                vl.set_data([start + t / FPS, start + t / FPS], [0, 1])
 
         if end > 0:
             steps = end - begin
