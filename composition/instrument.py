@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import soundfile
 from IPython.display import Audio
-from matplotlib import animation
+from matplotlib import animation, gridspec
 
 from composition.common import HOP_SIZE, SECOND, constant, generate_audio
 
@@ -183,21 +183,64 @@ class Score:
         self.num_steps = max(len(p) for p in self.parts)
         self.duration = self.num_steps * HOP_SIZE
 
-    def show(self):
-        n = len(self.parts)
-        fig, axes = plt.subplots(n, 1, figsize=(16, n * 4), sharex=True)
+    def show(self, begin=0, end=-1):
+        if end > 0:
+            steps = end - begin
+        else:
+            steps = max((len(p) for p in self.parts))
 
-        for idx, part in enumerate(self.parts):
-            steps = len(part)
-            dur = steps / SECOND
-            t = np.linspace(0, dur, steps)
+        parts = [p for p in self.parts if any(p.loudness[begin:end] > -120)]
+        start = begin / SECOND
+        stop = end / SECOND
+        t = np.linspace(start, stop, steps)
 
-            ax2 = axes[idx].twinx()
+        n = len(parts)
+        figure = plt.figure(figsize=(1920 / 100, 1080 / 100))
+        plt.gcf().set_dpi(100)
+        outer_grid = gridspec.GridSpec(n, 1)
 
-            axes[idx].plot(t, part.loudness, color='red')
-            ax2.plot(t, part.pitch, color='blue')
+        for part, cell in zip(parts, outer_grid):
+            inner_grid = gridspec.GridSpecFromSubplotSpec(2, 1, cell, hspace=0, height_ratios=(COPPER, 1))
 
-            plt.title(part.part_name)
+            # From here we can plot using inner_grid's SubplotSpecs
+            ax1 = plt.subplot(inner_grid[0, 0])
+            ax2 = plt.subplot(inner_grid[1, 0])
+
+            ax1.set_title(part.part_name)
+
+            # pitch
+            ax1.plot(t, part.pitch[begin:end], color='blue')
+            ax1.axes.xaxis.set_visible(False)
+            ax1.yaxis.set_major_formatter(note_formatter)
+            y_start = np.floor(part.pitch[begin:end].min())
+            y_end = np.ceil(part.pitch[begin:end].max())
+            pitch_nums = np.arange(y_start, y_end + 1)
+            ax1.set_yticks(pitch_nums)
+
+            # loudness
+            ax2.plot(t, part.loudness[begin:end], color='blue')
+            ax2.fill_between(t, min(part.loudness[begin:end]), part.loudness[begin:end], color='red', alpha=0.75)
+            ax2.axes.yaxis.set_visible(False)
+            x_ticks = np.concatenate([t, t[-1:] + 1 / SECOND])
+            ax2.set_xticks(x_ticks[::SECOND])
+
+        return figure
+
+    def video(self, path, begin=0, end=-1, codec='h264'):
+        fig = self.show(begin, end)
+        vlines = [ax.axvline(0.0) for ax in fig.get_axes()]
+
+        def show_time(t):
+            for vl in vlines:
+                vl.set_data([t / FPS, t / FPS], [0, 1])
+
+        if end > 0:
+            steps = end - begin
+        else:
+            steps = max((len(p) for p in self.parts))
+        n_frames = int(FPS * (steps / SECOND))
+        anim = animation.FuncAnimation(fig, show_time, frames=n_frames)
+        anim.save(path, writer=animation.FFMpegWriter(FPS, codec), dpi=100)
 
     def audio(self):
         result = np.zeros(self.duration)
