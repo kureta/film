@@ -12,7 +12,11 @@ from matplotlib import animation, gridspec
 from composition.common import HOP_SIZE, SECOND, constant, generate_audio
 
 # from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.ticker import AutoMinorLocator, MaxNLocator
 
+GOLDEN = 1.618033989
+SILVER = 2.414213562
+BRONZE = 3.302775638
 COPPER = 4.236067978
 FPS = 30
 
@@ -43,6 +47,10 @@ def note_formatter(x, _pos=None):
     return get_note(x)
 
 
+def time_formatter(x, _pos=None):
+    return f'{x:.1f}'
+
+
 def pad(xs, duration, value=None):
     if value is None:
         value = xs.min()
@@ -63,7 +71,7 @@ def show(pitch, loudness, title=None, offset=0.0):
     fig.subplots_adjust(hspace=0)
 
     if title:
-        ax1.set_title(title)
+        ax1.set_ylabel(title)
 
     # pitch
     ax1.plot(t, pitch, color='blue')
@@ -73,6 +81,8 @@ def show(pitch, loudness, title=None, offset=0.0):
     y_end = np.ceil(pitch.max())
     pitch_nums = np.arange(y_start, y_end + 1)
     ax1.set_yticks(pitch_nums)
+    # ax1.set_yticks([66, 71, 78])
+    ax1.grid(True)
 
     # loudness
     ax2.plot(t, loudness, color='blue')
@@ -80,6 +90,7 @@ def show(pitch, loudness, title=None, offset=0.0):
     ax2.axes.yaxis.set_visible(False)
     x_ticks = np.concatenate([t, t[-1:] + 1 / SECOND])
     ax2.set_xticks(x_ticks[::SECOND])
+    # ax2.set_ylim([-90, -13])
 
     return fig
 
@@ -183,7 +194,7 @@ class Score:
         self.num_steps = max(len(p) for p in self.parts)
         self.duration = self.num_steps * HOP_SIZE
 
-    def show(self, begin=0, end=-1):
+    def show(self, begin=0, end=-1, pitch_ticks=None):
         if end > 0:
             steps = end - begin
         else:
@@ -195,39 +206,58 @@ class Score:
         t = np.linspace(start, stop, steps)
 
         n = len(parts)
+        if pitch_ticks:
+            assert len(pitch_ticks) == n
         figure = plt.figure(figsize=(1920 / 100, 1080 / 100))
         plt.gcf().set_dpi(100)
         outer_grid = gridspec.GridSpec(n, 1)
 
-        for part, cell in zip(parts, outer_grid):
-            inner_grid = gridspec.GridSpecFromSubplotSpec(2, 1, cell, hspace=0, height_ratios=(COPPER, 1))
+        for idx, (part, cell) in enumerate(zip(parts, outer_grid)):
+            inner_grid = gridspec.GridSpecFromSubplotSpec(2, 1, cell, hspace=0, height_ratios=(BRONZE, 1))
 
             # From here we can plot using inner_grid's SubplotSpecs
             ax1 = plt.subplot(inner_grid[0, 0])
             ax2 = plt.subplot(inner_grid[1, 0])
 
-            ax1.set_title(part.part_name)
+            ax1.set_ylabel(part.part_name)
 
             # pitch
             ax1.plot(t, part.pitch[begin:end], color='blue')
             ax1.axes.xaxis.set_visible(False)
             ax1.yaxis.set_major_formatter(note_formatter)
-            y_start = np.floor(part.pitch[begin:end].min())
-            y_end = np.ceil(part.pitch[begin:end].max())
-            pitch_nums = np.arange(y_start, y_end + 1)
-            ax1.set_yticks(pitch_nums)
+            if not pitch_ticks:
+                y_start = np.floor(part.pitch[begin:end].min())
+                y_end = np.ceil(part.pitch[begin:end].max())
+                pitch_nums = np.arange(y_start, y_end + 1)
+                ax1.set_yticks(pitch_nums)
+            else:
+                ax1.set_yticks(pitch_ticks[idx])
+            ax1.yaxis.set_minor_locator(MaxNLocator(nbins=25, integer=True))
+            ax1.yaxis.set_tick_params(labelsize='x-small')
+
+            ax1.grid(True, which='major', color='black', linestyle='-')
+            ax1.grid(True, which='minor', linestyle='--')
 
             # loudness
+            loudness_limits = [np.min(part.loudness[part.loudness > -120]),
+                               np.max(part.loudness)]
             ax2.plot(t, part.loudness[begin:end], color='blue')
-            ax2.fill_between(t, min(part.loudness[begin:end]), part.loudness[begin:end], color='red', alpha=0.75)
+            ax2.fill_between(t, loudness_limits[0], part.loudness[begin:end], color='red', alpha=0.75)
             ax2.axes.yaxis.set_visible(False)
+            # ax2.set_yticks(loudness_limits)
             x_ticks = np.concatenate([t, t[-1:] + 1 / SECOND])
-            ax2.set_xticks(x_ticks[::SECOND])
+            if len(x_ticks > 8000):
+                ax2.set_xticks(x_ticks[::SECOND*2])
+            else:
+                ax2.set_xticks(x_ticks[::SECOND])
+            ax2.set_ylim(loudness_limits)
+            ax2.margins(y=0.0)
+            ax2.xaxis.set_major_formatter(time_formatter)
 
         return figure
 
-    def video(self, path, begin=0, end=-1, codec='h264'):
-        fig = self.show(begin, end)
+    def video(self, path, begin=0, end=-1, pitch_ticks=None, codec='h264'):
+        fig = self.show(begin, end, pitch_ticks)
         start = begin / SECOND
         vlines = [ax.axvline(start) for ax in fig.get_axes()]
 
