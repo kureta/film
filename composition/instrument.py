@@ -1,5 +1,6 @@
 import os
 import pickle
+from pathlib import Path
 
 import ddsp.training
 import librosa
@@ -12,7 +13,7 @@ from matplotlib import animation, gridspec
 from composition.common import HOP_SIZE, SECOND, constant, generate_audio
 
 # from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.ticker import AutoMinorLocator, MaxNLocator
+from matplotlib.ticker import MaxNLocator
 
 GOLDEN = 1.618033989
 SILVER = 2.414213562
@@ -270,8 +271,12 @@ class Score:
         else:
             steps = max((len(p) for p in self.parts))
         n_frames = int(FPS * (steps / SECOND))
-        anim = animation.FuncAnimation(fig, show_time, frames=n_frames)
-        anim.save(path, writer=animation.FFMpegWriter(FPS, codec), dpi=100)
+        # anim = animation.FuncAnimation(fig, show_time, frames=n_frames)
+        # anim.save(path, writer=animation.FFMpegWriter(FPS, codec), dpi=100)
+        for i in range(n_frames):
+            show_time(i)
+            ppp = Path(path).parent / f'{begin / SECOND:.1f}-{i:05d}.png'
+            fig.savefig(ppp, format='png', dpi=100, facecolor='white', transparent=False)
 
     def audio(self):
         result = np.zeros(self.duration)
