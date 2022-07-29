@@ -7,3 +7,6 @@ then composed for an ensemble of those AIs.
 The composition is constructed in [December.ipynb](https://github.com/kureta/film/blob/master/December.ipynb) notebook.
 Graphical score was created using numpy.
 Final render of the score follower video is on [YouTube](https://www.youtube.com/watch?v=LT73XTeWyMo).
+
+
+I am currently working on a real-time, 48kHz, Pytorch implementation of the model [here](https://github.com/kureta/performer).
