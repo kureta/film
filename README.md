@@ -10,3 +10,4 @@ Final render of the score follower video is on [YouTube](https://www.youtube.com
 
 
 I am currently working on a real-time, 48kHz, Pytorch implementation of the model [here](https://github.com/kureta/performer).
+You can see the training/prototyping progress at [wandb](https://wandb.ai/kureta/last-ditch/runs/1pbg8cow?workspace=user-kureta).
